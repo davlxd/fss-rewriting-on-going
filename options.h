@@ -1,7 +1,7 @@
 /*
- * Linearly diff match algorithm, header file
+* Command-line options and config file parse 
  *
- * Copyright (c) 2010, 2011 lxd <edl.eppc@gmail.com>
+ * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
  * This file is part of File Synchronization System(fss).
  *
@@ -18,32 +18,43 @@
  * You should have received a copy of the GNU General Public License
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _DIFF_H_
-#define _DIFF_H_
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#define SHA1_LINE_LEN 42
+#ifndef _FSS_OPTIONS_H_
+#define _FSS_OPTIONS_H_
 
-#ifndef MAX_LINE_LEN
-#define MAX_LINE_LEN SHA1_LINE_LEN
+#include "fss.h"
+
+struct options {
+
+#define MOD_SERVER 0
+#define MOD_CLIENT 1
+  
+  int mode;  //0 - run as server, 1 - run as client
+  char server_addr[MAX_PATH_LEN];
+  char path[MAX_PATH_LEN]; // monitored path
+  char dir[MAX_PATH_LEN];  // fss's dir
+
+  int local_port;
+  int remote_port;
+  
+  
+
+
+
+};
+
+
+
+
+int load_default_options(struct options *o);
+int parse_config_file(struct options *o);
+int parse_argv(struct options *o);
+  
+
+
 #endif
 
-FILE *file_in_0;
-FILE *file_in_1;
-FILE *file_out_0;
-FILE *file_out_1;
-FILE *file_out_2;
-
-/* fout0 -> lines exist in fin0, not in fin1
- * fout1 -> lines exist in fin1, not in fin0
- * fout2 -> lines both in fin0 and fin1
- */
-int diff(const char *fin0, const char *fin1,
-	 const char *fout0, const char *fout1, const char *fout2);
-
-
-
-#endif
+  
+    

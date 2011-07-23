@@ -1,7 +1,7 @@
 /*
- * Log on functions header file
+ * 
  *
- * Copyright (c) 2010, 2011 lxd <edl.eppc@gmail.com>
+ * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
  * This file is part of File Synchronization System(fss).
  *
@@ -18,26 +18,3 @@
  * You should have received a copy of the GNU General Public License
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _LOG_H_
-#define _LOG_H_
-
-#include <stdio.h>
-#include <time.h>
-#include <sys/stat.h>
-#include <stdarg.h>
-#include <syslog.h>
-#include <string.h>
-#include <unistd.h>
-
-#ifndef LOG_RECORD_MAX_LEN
-#define LOG_RECORD_MAX_LEN 1024
-#endif
-
-static FILE *log_fp = NULL;
-static const char *log_fname = "fss.log";
-
-void fsslog(const char *msg, ...);
-static void logit(const char *fmt, va_list ap);
-
-
-#endif

@@ -1,7 +1,9 @@
 /*
- * functions frequently used by other modules
+ * fss - File Synchronization System , detect file changes under
+ *       specific directory on one client then synchronize to other
+ *       client via a centralized server
  *
- * Copyright (c) 2010, 2011 lxd <edl.eppc@gmail.com>
+ * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
  * This file is part of File Synchronization System(fss).
  *
@@ -22,17 +24,42 @@
 #ifndef _F_SS_H_
 #define _F_SS_H_
 
+#define _XOPEN_SOURCE 500
 
-#ifndef INCLUDE_HIDDEN
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/wait.h>
+#include <sys/inotify.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <ftw.h>
+#include <dirent.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <netdb.h>
+
+// default configuration
 #define INCLUDE_HIDDEN 0
-#endif 
+#define BUF_LEN 4096
+#define MAX_PATH_LEN 1024
+#define MAX_PARAM
 
-#ifndef FSS_DIR
-#define FSS_DIR ".fss"
-#endif
+#define DEFAULT_BLOCK_LEN 700
+#define DEFAULT_PORT 3375
+#define DEFAULT_FSS_DIR ".fss"
 
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)>(b)?(a):(b))
 
-extern int errno;
+typedef enum { false = 0, true = 1 } bool;
 
 
 #endif

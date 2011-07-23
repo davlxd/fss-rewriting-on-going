@@ -1,7 +1,7 @@
 /*
- * Read fss.conf file header file
+ * Path string operate routines
  *
- * Copyright (c) 2010, 2011 lxd <edl.eppc@gmail.com>
+ * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
  * This file is part of File Synchronization System(fss).
  *
@@ -19,30 +19,19 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PARAMS_H_
-#define _PARAMS_H_
+#ifndef _FSS_PATH_H_
+#define _FSS_PATH_H_
 
-//#include "log.h"
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
-#include <sys/stat.h>
 
-#ifndef PARAM_LEN
-#define PARAM_LEN 16
-#endif
-#ifndef VALUE_LEN
-#define VALUE_LEN 1024
-#endif
+// append str1 to str0, size refers to total size of str0
+int pathncat(const char *path1, char *path0, size_t size);
 
-extern int errno;
-
-int get_param_value(const char *k, char *v);
-
-
+int full2rela(const char *fullname, char *relaname, size_t size);
+int rela2full(const char *relaname, char *fullname, size_t size);
 
 
 #endif
+
+  
+    

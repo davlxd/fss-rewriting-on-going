@@ -1,6 +1,7 @@
 /*
+ * wrap functions of sha1.c
  *
- * Copyright (c) 2010, 2011 lxd <edl.eppc@gmail.com>
+ * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
  * This file is part of File Synchronization System(fss).
  *
@@ -17,36 +18,31 @@
  * You should have received a copy of the GNU General Public License
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _WRAP_SHA1_H_
-#define _WRAP_SHA1_H_
-
-#include "sha1.h"
 
 #include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/stat.h>
-extern int errno;
+
+#ifndef _WRAP_SHA1_H_
+#define _WRAP_SHA1_H_
 
 #ifndef SHA1_BUF_LEN
 #define SHA1_BUF_LEN 1024
 #endif
 
-#ifndef MAX_PATH_LEN
-#define MAX_PATH_LEN 1024
+#ifndef SHA1_STR_LEN
+#define SHA1_STR_LEN 41
 #endif
 
+// sha1_digest refers to original sha1 digest of file's content
+// hash_digest refers to sha1_checksum(sha1_digest+[relaname])
 
-int sha1_digest_via_fname(const char *fname, char *digest);
+// if fullname doesn't exist, following 2 funtions will return ENOENT
+int get_sha1(const char *fullname, char *digest, size_t size);
+int get_hash(const char *fullname, const char *relaname,
+	     char *sha1_digest, size_t sha1_size,
+	     char *hash_digest, size_t hash_size);
 
-/* I need this function because of my dirty design
- * this function ask for root_path to calculate sha1 including
- * relative path*/
-int sha1_digest_via_fname_fss(const char *fname,
-			      const char *root_path, char*digest);
-
-int sha1_file(FILE *file, char *digest);
-int sha1_str(char *text, char *digest);
+int sha1_file(FILE *file, char *digest, size_t size);
+int sha1_str(char *text, char *digest, size_t size); 
 
 
 
