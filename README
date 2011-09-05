@@ -13,11 +13,14 @@ Table of contents :
 
 2.  Usage
 ---------
-    
+    $ ./configure
+    $ make
+    # make install
+    $ fss --help
 
 3.  Contacts
 ------------
-    Author's E-mail: edl.eppc@gmail.com
+    Author's E-mail: i@lxd.me
     Author's Site: http://lxd.me
 
 4.  About License

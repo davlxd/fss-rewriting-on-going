@@ -1,5 +1,5 @@
 /*
-* Command-line options and config file parse 
+ * Command-line options and config file parse 
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -19,39 +19,38 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-
 #ifndef _FSS_OPTIONS_H_
 #define _FSS_OPTIONS_H_
 
-#include "fss.h"
+#include "utils.h"
+
+// Max value numbers after each option on command line
+#define MAX_VALUE_NUM  8
+
+#define MODE_UNSET     0
+#define MODE_CLIENT    (1)
+#define MODE_SERVER    (1<<1)
 
 struct options {
-
-#define MOD_SERVER 0
-#define MOD_CLIENT 1
   
-  int mode;  //0 - run as server, 1 - run as client
-  char server_addr[MAX_PATH_LEN];
-  char path[MAX_PATH_LEN]; // monitored path
-  char dir[MAX_PATH_LEN];  // fss's dir
+  const char *log_file;
+  bool syslog;
+  bool verbose;
 
-  int local_port;
-  int remote_port;
-  
-  
+  unsigned int mode;
+  const char *server_addr;
+  const char *path; // monitored path
+  const char *fss_dir;  // fss's dir
 
-
+  uint16_t local_port;
+  uint16_t remote_port;  
 
 };
 
 
-
-
 int load_default_options(struct options *o);
 int parse_config_file(struct options *o);
-int parse_argv(struct options *o);
-  
+int parse_argv(const int argc, char *argv[], struct options *o);
 
 
 #endif

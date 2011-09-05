@@ -1,5 +1,5 @@
 /*
- *
+ * Utility routines
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -19,3 +19,16 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "utils.h"
+#include "fss.h"
+
+bool verify_dir(const char *p)
+{
+  struct stat sb;
+  
+  if (stat(p, &sb) < 0 || !S_ISDIR(sb.st_mode))
+    return false;
+  
+  return true;
+        
+}

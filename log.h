@@ -19,3 +19,23 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _FSS_LOG_H_
+#define _FSS_LOG_H_
+
+#include <fss.h>
+#include "options.h"
+
+#define MAX_LOG_LEN       1024
+
+void init_log(const struct options *o);
+void close_log();
+
+void Log (int priority, const char *format, ...)
+#ifdef __GNUC__
+  __attribute__((format (printf, 2, 3)))
+#endif
+  ;
+
+#define Log_die(status, p, args...) do { Log(p, args); die(status);} while (0)
+
+#endif

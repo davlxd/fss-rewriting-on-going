@@ -1,5 +1,5 @@
 /*
- *
+ * Program exit routines
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -19,3 +19,11 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "exit.h"
+#include "log.h"
+
+void die(const int status)
+{
+  close_log();
+  exit(status);
+}

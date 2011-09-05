@@ -45,21 +45,18 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <netdb.h>
+#include <config.h>
+#include <syslog.h>
+#include <stdarg.h>
 
 // default configuration
-#define INCLUDE_HIDDEN 0
-#define BUF_LEN 4096
-#define MAX_PATH_LEN 1024
-#define MAX_PARAM
+#define INCLUDE_HIDDEN          0
+#define BUF_LEN                 4096
+#define MAX_PATH_LEN            1024
 
-#define DEFAULT_BLOCK_LEN 700
-#define DEFAULT_PORT 3375
-#define DEFAULT_FSS_DIR ".fss"
-
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#define MAX(a,b) ((a)>(b)?(a):(b))
-
-typedef enum { false = 0, true = 1 } bool;
+#define DEFAULT_BLOCK_LEN       700
+#define DEFAULT_PORT            3375
+#define DEFAULT_FSS_DIR         "." PACKAGE_TARNAME
 
 
 #endif

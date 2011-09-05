@@ -25,10 +25,10 @@
 #include <stdio.h>
 
 // append str1 to str0, size refers to total size of str0
-int pathncat(const char *path1, char *path0, size_t size);
+char *pathncat(char *path0, const char *path1, size_t size);
 
-int full2rela(const char *fullname, char *relaname, size_t size);
-int rela2full(const char *relaname, char *fullname, size_t size);
+char *full2rela(const char *fullname, char *relaname, size_t size);
+char *rela2full(const char *relaname, char *fullname, size_t size);
 
 
 #endif

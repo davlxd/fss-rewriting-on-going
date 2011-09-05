@@ -19,3 +19,11 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+#ifndef _FSS_TEMPLATE_H
+#define _FSS_TEMPLATE_H
+
+
+
+
+#endif

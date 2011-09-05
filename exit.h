@@ -1,5 +1,5 @@
 /*
- *
+ * Program exit routines
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -19,3 +19,18 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _FSS_EXIT_H_
+#define _FSS_EXIT_H_
+
+#define DIE_SUCCESS    0
+#define DIE_FAILURE    1
+
+
+void die(const int status)
+#ifdef __GNUC__
+  __attribute__((noreturn))
+#endif
+  ;
+
+
+#endif

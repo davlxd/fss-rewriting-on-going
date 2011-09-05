@@ -1,5 +1,5 @@
 /*
- *
+ * Utility routines
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -19,3 +19,20 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _FSS_UTILS_H_
+#define _FSS_UTILS_H_
+
+#define min(a,b) ((a)<(b)?(a):(b))
+#define max(a,b) ((a)>(b)?(a):(b))
+
+#define set0(ptr) memset(ptr, 0, sizeof(*ptr))
+#define streq(a, b) (!strcmp((a), (b)))
+#define strneq(a, b) (!strncmp((a), (b), min(strlen(a), strlen(b))))
+
+typedef enum { false = 0, true = 1 } bool;
+
+bool verify_dir(const char *path);
+
+
+
+#endif
