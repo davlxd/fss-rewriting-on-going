@@ -1,5 +1,5 @@
 /*
- *
+ * Entry function of server side 
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -19,4 +19,19 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-k
+#include "server.h"
+#include "flist.h"
+
+void entry_server(const struct options *o)
+{
+  load_flist(o);
+  update_flist();
+
+  while(1) {
+
+
+
+
+  }
+
+}

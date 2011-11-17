@@ -22,17 +22,29 @@
 #ifndef _FSS_UTILS_H_
 #define _FSS_UTILS_H_
 
+#include <sys/stat.h>
+#include <inttypes.h>
+#include <string.h>
+
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
+#define set0(x) (memset(&(x), 0, sizeof((x))))
 
-#define set0(ptr) memset(ptr, 0, sizeof(*ptr))
-#define streq(a, b) (!strcmp((a), (b)))
-#define strneq(a, b) (!strncmp((a), (b), min(strlen(a), strlen(b))))
+#define str2port(s) str2uint16(s)
 
 typedef enum { false = 0, true = 1 } bool;
 
+bool streq(const char *s0, const char *s1);
+bool strprefix(const char *pre, const char *str);
+
 bool verify_dir(const char *path);
+bool verify_addr(const char *addr);
 
 
+uint32_t str2uint32(const char *str);
+uint16_t str2uint16(const char *str);
+mode_t str2modet(const char *str);
+
+mode_t get_proc_umask();
 
 #endif

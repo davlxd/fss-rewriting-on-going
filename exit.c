@@ -21,9 +21,17 @@
 
 #include "exit.h"
 #include "log.h"
+#include "flist.h"
+#include <stdlib.h>
 
 void die(const int status)
 {
+
+  cleanup_flist();
+  if (status == DIE_SUCCESS)
+    unload_flist();
+  
   close_log();
+  
   exit(status);
 }

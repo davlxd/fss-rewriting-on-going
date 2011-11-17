@@ -20,8 +20,11 @@
  */
 
 #include "log.h"
-#include "exit.h"
-#include "fss.h"
+#include "config.h"
+#include "utils.h"
+#include <stdio.h>
+#include <stdarg.h>
+#include <errno.h>
 
 extern int errno;
 
@@ -32,19 +35,15 @@ static bool _verbose = false;
 static void open_syslog();
 static void close_syslog();
 
-
 void init_log(const struct options *o)
 {
   if (o->log_file) {
     if (!(_logfp = fopen(o->log_file, "a+")))
 	Log_die(DIE_FAILURE, LOG_ERR, "fopen(%s) failed", o->log_file);
-    
   } else
       _logfp = stdout;
-    
 
   o->syslog ? open_syslog() : close_syslog();
-
   _verbose = o->verbose;
 }
 
@@ -67,29 +66,33 @@ static void close_syslog()
 }
 
 
-void close_log()
+int close_log()
 {
   close_syslog();
   
   if (_logfp && _logfp != stdout)
-    if (fclose(_logfp) == EOF)
-      Log_die(DIE_FAILURE, LOG_ERR, "fclose() _logfp failed");
+    if (fclose(_logfp) == EOF) {
+      Log(LOG_ERR, "fclose() _logfp failed");
+      return -1;
+    }
   
   _logfp = NULL;
+  return 0;
 }
 
 
 
-void Log(int priority, const char *fmt, ...)
+void do_log(int priority,
+	    const char* _file, const char* _func, int _line,
+	    const char *fmt, ...)
 {
-  char custom_msg[MAX_LOG_LEN];
+  size_t msg_len = 0;
   char log_record[MAX_LOG_LEN];
-  set0(&log_record);
-  set0(&custom_msg);
+  set0(log_record);
 
   va_list ap;
   va_start(ap, fmt);
-  vsnprintf(custom_msg, MAX_LOG_LEN, fmt, ap);
+  vsnprintf(log_record, MAX_LOG_LEN, fmt, ap);
   va_end(ap);
 
   char *flag;
@@ -131,23 +134,26 @@ void Log(int priority, const char *fmt, ...)
     break;
   }
 
-  if (_syslog) {
-    if (errno) // append standard error message string if errno is set
-      syslog(priority, "%s: %s", custom_msg, strerror(errno));
-    else
-      syslog(priority, "%s", custom_msg);
+  if (_file && _func && _line) {
+    msg_len = strlen(log_record);
+    snprintf(log_record+msg_len, MAX_LOG_LEN-msg_len-1, 
+	     " (%s, %s(), %d)", _file, _func, _line);
   }
 
-  // Just if _syslog == true and _logfp == stdout
+  if (errno && (priority == LOG_ERR || priority == LOG_WARNING)) {
+    msg_len = strlen(log_record);
+    snprintf(log_record+msg_len, MAX_LOG_LEN-msg_len-1, 
+	     ": %s", strerror(errno));
+  }
+
+  if (_syslog)
+    syslog(priority, "%s.", log_record);
+
+  // if _syslog == true and _logfp == stdout
   // so we don't print log messages to _logfp
   if (_logfp != stdout || !_syslog) {
-    if (errno)
-      fprintf(_logfp, "%s: %s: %s\n", flag, custom_msg, strerror(errno));
-    else
-      fprintf(_logfp, "%s: %s\n", flag, custom_msg);
+    fprintf(_logfp, "%s: %s.\n", flag, log_record);
     fflush(_logfp);
   }
-
-  //strncpy(log_record, MAX_LOG_LEN, "%s: %s: %s\n", flag, custom_msg, strerr_msg);
 
 }

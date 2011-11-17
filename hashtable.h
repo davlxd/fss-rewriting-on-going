@@ -1,5 +1,5 @@
 /*
- *
+ * Build hashtable for flist and blist
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -19,26 +19,26 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _FSS_LOG_H_
-#define _FSS_LOG_H_
 
-#include "options.h"
-#include "exit.h"
-#include <syslog.h>
+#ifndef _FSS_HASHTABLE_H
+#define _FSS_HASHTABLE_H
 
-#define MAX_LOG_LEN       1024
+#include <inttypes.h>
 
-void init_log(const struct options *o);
-int close_log();
+#define MIN_HASHTABLE_SIZE ((uint32_t)1 << 8)
+#define MAX_HASHTABLE_SIZE ((uint32_t)1 << 16)
 
-#define Log(p, args...) do_log(p, NULL, NULL, 0, args)
-#define Log_die(status, p, args...) do { do_log(p, __FILE__, __func__, __LINE__, args); die(status);} while (0)
+typedef struct {
+  uint32_t size;
+  void **bucket;
+  
+} hashtable;
+
+// raw_size is file/directories number come from "statinfo.fss"
+hashtable* init_hashtable(uint64_t raw_size);
+void free_hashtable(hashtable *htb);
 
 
-void do_log(int p, const char*, const char*, int, const char *, ...)
-#ifdef __GNUC__
-  __attribute__((format (printf, 5, 6)))
-#endif
-  ;
+
 
 #endif

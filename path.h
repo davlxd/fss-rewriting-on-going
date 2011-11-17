@@ -13,7 +13,7 @@
  * fss is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+n * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
@@ -24,8 +24,17 @@
 
 #include <stdio.h>
 
+#define PATH_SEP "/"
+
+#define IS_HIDDEN(s) (*get_tail((s)) == '.')
+
 // append str1 to str0, size refers to total size of str0
+void set_basepath(const char *p);
+
+const char *get_tail(const char *path);
+
 char *pathncat(char *path0, const char *path1, size_t size);
+char *pathncat2(char *, const char *, const char *, size_t);
 
 char *full2rela(const char *fullname, char *relaname, size_t size);
 char *rela2full(const char *relaname, char *fullname, size_t size);

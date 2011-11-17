@@ -28,16 +28,20 @@
 #define MAX_VALUE_NUM  8
 
 #define MODE_UNSET     0
-#define MODE_CLIENT    (1)
-#define MODE_SERVER    (1<<1)
+#define MODE_CLIENT    true
+#define MODE_SERVER    false
 
 struct options {
   
   const char *log_file;
   bool syslog;
+  mode_t umask;
   bool verbose;
 
-  unsigned int mode;
+  bool mode;
+  bool force_use_digest;
+  bool follow_symbolic;
+  bool include_hidden;
   const char *server_addr;
   const char *path; // monitored path
   const char *fss_dir;  // fss's dir
@@ -52,8 +56,5 @@ int load_default_options(struct options *o);
 int parse_config_file(struct options *o);
 int parse_argv(const int argc, char *argv[], struct options *o);
 
-
 #endif
-
-  
     

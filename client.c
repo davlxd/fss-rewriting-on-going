@@ -1,5 +1,5 @@
 /*
- * 
+ * Entry function of client side 
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -18,3 +18,11 @@
  * You should have received a copy of the GNU General Public License
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "client.h"
+
+void entry_client(const struct options *o)
+{
+  
+
+}

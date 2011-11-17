@@ -30,13 +30,19 @@ sysconf_DATA = fss.conf
 AUTOMAKE_OPTIONS = foreign
 
 fss_SOURCES = \
+	digest.c digest.h \
 	exit.c exit.h \
-	fss.h \
-	fss.c \
+	flist.c flist.h \
+	fs.c fs.h \
+	fss.c fss.h \
+	hashtable.c hashtable.h \
 	log.c log.h \
 	options.c options.h \
 	path.c path.h \
+	setsignal.c setsignal.h \
 	sha1.c sha1.h \
-	wrap-sha1.c wrap-sha1.h \
-	sock.c sock.h \
 	utils.c utils.h
+
+
+
+

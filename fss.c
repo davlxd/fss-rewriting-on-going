@@ -21,41 +21,74 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fss.h"
 
 #include "log.h"
+#include "utils.h"
 #include "options.h"
-#include "exit.h"
+#include "path.h"
+#include "fs.h"
+#include "setsignal.h"
+#include <stdlib.h>
+//#include "server.h"
+//#include "client.h"
+#include <unistd.h>
+#include <errno.h>
+
+extern int errno;
+
+static void test_flist(struct options* o)
+{
+  char buf[2];
+  memset(buf, 0, 2);
+  ssize_t num;
+  init_flist(o);
+  load_flist();
+
+  while ((num = read(STDIN_FILENO, buf, 2)) > 0)
+    switch (*buf) {
+    case 'q':
+      unload_cleanup_flist();
+      printf("Exit\n");
+      exit(EXIT_SUCCESS);
+    case 'u':
+      printf("\n");
+      update_flist();
+      print_flist();
+      break;
+    case 'w':
+      unload_flist();
+      print_flist();
+      break;
+    default:
+      fprintf(stderr, "TEST: unknown input %c: %s\n", *buf, strerror(errno));
+    }
+  
+  if (num < 0) {
+    perror("TEST: read from STDIN failed");
+    exit(EXIT_FAILURE);
+  }
+    
+}
 
 int main(int argc, char *argv[])
 {
+
   struct options o;
-  set0(&o);
+  set0(o);
 
   load_default_options(&o);
-  init_log(&o);
   parse_config_file(&o);
   parse_argv(argc, argv, &o);
+  init_log(&o);
 
-  Log(LOG_INFO, "test");
-  set_basepath(o.path);
-
-
-  char *full_const = "home/a/b/c/";
-  char  relaname[MAX_PATH_LEN];
-  set0(&relaname);
-  printf("full2rela of %s is --%s--\n", full_const, full2rela(full_const, relaname, MAX_PATH_LEN));
-
-  char *rela_const = "/asdf/c/";
-  char fullname[MAX_PATH_LEN];
-  set0(&fullname);
-  printf("rela2full of %s is --%s--\n", rela_const, rela2full(rela_const, fullname, MAX_PATH_LEN));
-
-  close_log();
-
-  die(DIE_SUCCESS);
-
+  set_basepath(o.path); // for path.c/h
+  set_umask(o.umask);   // for fs.c/h
   
+  /* set SIGINT SIGTREM to die routine */
+  init_signal_handler();
 
+  test_flist(&o);
+  
+  die(DIE_SUCCESS);
 
 }

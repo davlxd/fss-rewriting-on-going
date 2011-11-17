@@ -23,16 +23,48 @@
 #include "fss.h"
 #include "log.h"
 #include "exit.h"
+#include <dirent.h>
+#include <assert.h>
+#include <errno.h>
+extern int errno;
 
 
 static const char *basepath; // basepath is client's monitored path
                              // or server's storage path
-
 void set_basepath(const char *p)
 {
+  if (!p)
+    Log_die(DIE_FAILURE, LOG_ERR, "Monitored Direcotry is NULL");
+  
+  struct stat sb;
+  set0(sb);
+  int rv = stat(p, &sb);
+
+  if (rv == 0 && !S_ISDIR(sb.st_mode))
+    Log_die(DIE_FAILURE, LOG_ERR, "Monitored directory is a file, exit!");
+  else if (rv < 0 && errno == ENOENT)
+    Log_die(DIE_FAILURE, LOG_ERR, "Monitored directory dosen't exist, exit!");
+  else if (rv < 0)
+    Log_die(DIE_FAILURE, LOG_ERR, "stat(%s) failed", p);
+    
   basepath = p;
 }
 
+const char *get_tail(const char *path)
+{
+  assert(path);
+
+  const char *ptr = path + strlen(path);
+  assert(*ptr == '\0');
+
+  while (ptr != path && *ptr != *PATH_SEP)
+    ptr = ptr - 1;
+
+  if (*ptr == *PATH_SEP)
+    ptr = ptr + 1;
+  
+  return ptr;
+}
 
 char *pathncat(char *path0, const char *path1, size_t size)
 {
@@ -44,35 +76,51 @@ char *pathncat(char *path0, const char *path1, size_t size)
   if (size <= path0_len + path1_len)
     Log_die(DIE_FAILURE, LOG_ERR, "Dst char array is not big enough when copy %s to", path1);
 
+  if (path0_len == 0) {
+    if (!strncpy(ptr0, path1, path1_len+1))
+      Log_die(DIE_FAILURE, LOG_ERR, "strncpy() failed");
+    return path0;
+  }
 
-  if (*(ptr0 - 1) == '/' && *ptr1 == '/')
+  if (*(ptr0 - 1) == *PATH_SEP && *ptr1 == *PATH_SEP)
     *(--ptr0) = 0;
-  else if ( *(ptr0 - 1) != '/' && *ptr1 != '/')
-    *ptr0++ = '/';
+  else if ( *(ptr0 - 1) != *PATH_SEP && *ptr1 != *PATH_SEP)
+    *ptr0++ = *PATH_SEP;
 
   if (!strncpy(ptr0, path1, path1_len+1))
-    Log_die(DIE_FAILURE, LOG_ERR, "strncpy() %s to %s failed", path1, path0);
+    Log_die(DIE_FAILURE, LOG_ERR, "strncpy() failed");
 
   return path0;
+}
+
+char *pathncat2(char *path0, const char *path1, const char *path2,
+		size_t size)
+{
+  pathncat(path0, path1, size);
+  return pathncat(path0, path2, size);
 }
 
 
 char *full2rela(const char *fullname, char *relaname, size_t size)
 {
-  size_t monitored_path_len = strlen(basepath);
-  if (size <= strlen(fullname) - monitored_path_len)
-    Log_die(DIE_FAILURE, LOG_ERR, "relaname char array is not big enough to put %s minus %s", fullname, basepath);
-
-  size_t start_pos = monitored_path_len;
-
-  if (!strneq(basepath, fullname))
-    Log_die(DIE_FAILURE, LOG_ERR, "basepath %s is not a prefix of fullname %s", basepath, fullname);
+  size_t start_pos = strlen(basepath);
   
-  if (*(fullname + monitored_path_len) == '/')
+  while (*(fullname + start_pos) == *PATH_SEP)
     start_pos++;
 
+  // If relaname is NULL, size is ignored and just return a pointer
+  // pointing to original char *
+  if (relaname == NULL)
+    return fullname + start_pos;
+  
+  if (size <= strlen(fullname) - start_pos)
+    Log_die(DIE_FAILURE, LOG_ERR, "relaname char array is not big enough");
+
+  if (!strprefix(basepath, fullname))
+    Log_die(DIE_FAILURE, LOG_ERR, "basepath %s is not a prefix of fullname %s", basepath, fullname);
+  
   if (!strncpy(relaname, fullname + start_pos, size))
-    Log_die(DIE_FAILURE, LOG_ERR, "strncpy() failed when copy %s to %s", fullname+start_pos, relaname);
+    Log_die(DIE_FAILURE, LOG_ERR, "strncpy() failed");
 
   return relaname;
   
@@ -84,7 +132,7 @@ char *rela2full(const char *relaname, char *fullname, size_t size)
     Log_die(DIE_FAILURE, LOG_ERR, "fullname char array is not big enough to put %s plus %s", basepath, relaname);
   
   if (!strncpy(fullname, basepath, strlen(basepath)+1))
-    Log_die(DIE_FAILURE, LOG_ERR, "strncpy() failed when copy %s to %s", basepath, fullname);
+    Log_die(DIE_FAILURE, LOG_ERR, "strncpy() failed");
   
   return pathncat(fullname, relaname, size);
   

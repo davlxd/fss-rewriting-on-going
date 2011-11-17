@@ -1,5 +1,5 @@
 /*
- *
+ * Signal handlers
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -19,26 +19,24 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _FSS_LOG_H_
-#define _FSS_LOG_H_
-
-#include "options.h"
-#include "exit.h"
-#include <syslog.h>
-
-#define MAX_LOG_LEN       1024
-
-void init_log(const struct options *o);
-int close_log();
-
-#define Log(p, args...) do_log(p, NULL, NULL, 0, args)
-#define Log_die(status, p, args...) do { do_log(p, __FILE__, __func__, __LINE__, args); die(status);} while (0)
+#include "signal.h"
+#include "log.h"
+#include <signal.h>
 
 
-void do_log(int p, const char*, const char*, int, const char *, ...)
-#ifdef __GNUC__
-  __attribute__((format (printf, 5, 6)))
-#endif
-  ;
+static void sig_int_term(int signo)
+{
+  Log_die(DIE_SUCCESS, LOG_NOTICE, "Bye~");
+}
 
-#endif
+
+void init_signal_handler()
+{
+  if (signal(SIGINT, sig_int_term) == SIG_ERR) {
+    Log_die(DIE_FAILURE, LOG_ERR, "init_signal_handler failed");
+  }
+  if (signal(SIGTERM, sig_int_term) == SIG_ERR) {
+    Log_die(DIE_FAILURE, LOG_ERR, "init_signal_handler failed");
+  }
+
+}

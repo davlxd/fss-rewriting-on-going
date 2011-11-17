@@ -24,31 +24,6 @@
 #ifndef _F_SS_H_
 #define _F_SS_H_
 
-#define _XOPEN_SOURCE 500
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <sys/time.h>
-#include <sys/wait.h>
-#include <sys/inotify.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <ftw.h>
-#include <dirent.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <netdb.h>
-#include <config.h>
-#include <syslog.h>
-#include <stdarg.h>
-
 // default configuration
 #define INCLUDE_HIDDEN          0
 #define BUF_LEN                 4096

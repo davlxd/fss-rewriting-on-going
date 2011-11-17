@@ -1,5 +1,5 @@
 /*
- *
+ * Entry function of client side
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -19,26 +19,14 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _FSS_LOG_H_
-#define _FSS_LOG_H_
+
+#ifndef _FSS_CLIENT_H
+#define _FSS_CLIENT_H
 
 #include "options.h"
-#include "exit.h"
-#include <syslog.h>
 
-#define MAX_LOG_LEN       1024
-
-void init_log(const struct options *o);
-int close_log();
-
-#define Log(p, args...) do_log(p, NULL, NULL, 0, args)
-#define Log_die(status, p, args...) do { do_log(p, __FILE__, __func__, __LINE__, args); die(status);} while (0)
+void entry_client(const struct options *o);
 
 
-void do_log(int p, const char*, const char*, int, const char *, ...)
-#ifdef __GNUC__
-  __attribute__((format (printf, 5, 6)))
-#endif
-  ;
 
 #endif
