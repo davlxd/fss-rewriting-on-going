@@ -23,25 +23,32 @@
 
 bin_PROGRAMS = fss
 
-dist_doc_DATA = README COPYING license.txt
+dist_doc_DATA = README COPYING
 
-sysconf_DATA = fss.conf
+dist_sysconf_DATA = fss.conf
 
 AUTOMAKE_OPTIONS = foreign
 
 fss_SOURCES = \
+	blist.c blist.h \
+	client.c client.h \
+	core.c core.h \
 	digest.c digest.h \
 	exit.c exit.h \
 	flist.c flist.h \
-	fs.c fs.h \
 	fss.c fss.h \
 	hashtable.c hashtable.h \
+	io.c io.h \
 	log.c log.h \
 	options.c options.h \
 	path.c path.h \
+	ptrstack.c ptrstack.h \
+	server.c server.h \
 	setsignal.c setsignal.h \
 	sha1.c sha1.h \
-	utils.c utils.h
+	sock.c sock.h \
+	utils.c utils.h \
+	wrap-inotify.c wrap-inotify.h
 
 
 

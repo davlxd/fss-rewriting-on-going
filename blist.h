@@ -1,5 +1,5 @@
 /*
- * Entry function of client side
+ * Block list maintenace routines
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -20,13 +20,25 @@
  */
 
 
-#ifndef _FSS_CLIENT_H
-#define _FSS_CLIENT_H
+#ifndef _FSS_BLIST_H
+#define _FSS_BLIST_H
 
-#include "options.h"
+#include "flist.h"
+#include "utils.h"
 
-void entry_client(const struct options *o);
-int connect_to_server();
+typedef struct blockinfo binfo;
+
+struct blockinfo {
+  uint64_t offset;
+  uint64_t size;
+
+  unsigned char *digest;
+  finfo *fi;
+};
+
+int binfo_of_fd(int fd, finfo *fi, void (*fn)(binfo*), uint64_t blksz,
+		bool overlap);
+void cleanup_binfo(binfo *bi);
 
 
 

@@ -23,19 +23,28 @@
 #include "config.h"
 #include "utils.h"
 #include <stdio.h>
+#include <assert.h>
 #include <stdarg.h>
 #include <errno.h>
 
 extern int errno;
 
-static FILE *_logfp = NULL;
-static bool _syslog = false;
-static bool _verbose = false;
+static FILE *_logfp;
+static bool _syslog;
+static bool _verbose;
 
 static void open_syslog();
 static void close_syslog();
 
-void init_log(const struct options *o)
+void init_log()
+{
+  _logfp = stdout;
+  _syslog = true;
+  _verbose = true;
+}
+
+
+void reinit_log(const struct options *o)
 {
   if (o->log_file) {
     if (!(_logfp = fopen(o->log_file, "a+")))
@@ -149,11 +158,15 @@ void do_log(int priority,
   if (_syslog)
     syslog(priority, "%s.", log_record);
 
-  // if _syslog == true and _logfp == stdout
-  // so we don't print log messages to _logfp
-  if (_logfp != stdout || !_syslog) {
-    fprintf(_logfp, "%s: %s.\n", flag, log_record);
-    fflush(_logfp);
-  }
+  /* // if _syslog == true and _logfp == stdout */
+  /* // so we don't print log messages to _logfp */
+  /* if (_logfp != stdout || !_syslog) { */
+  /*   fprintf(_logfp, "%s: %s.\n", flag, log_record); */
+  /*   fflush(_logfp); */
+  /* } */
+
+  assert(_logfp);
+  fprintf(_logfp, "%s: %s.\n", flag, log_record);
+  fflush(_logfp);
 
 }

@@ -1,5 +1,5 @@
 /*
- * Build hashtable for flist and blist
+ * Open hashing 
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -26,9 +26,10 @@
 #include "flist.h"
 #include "utils.h"
 
-static uint32_t legalize_tablesize(uint64_t x)
+
+uint64_t power_of_2_ceiling(uint64_t x)
 {
-  uint32_t legal_size = 1;
+  uint64_t legal_size = 1;
 
   if (x <= MIN_HASHTABLE_SIZE)
     return MIN_HASHTABLE_SIZE;
@@ -41,38 +42,92 @@ static uint32_t legalize_tablesize(uint64_t x)
   return legal_size;
 }
 
-hashtable* init_hashtable(uint64_t raw_size)
+hashtable* init_hashtable(uint64_t size, size_t offset)
 {
-  hashtable *htb = (hashtable*)calloc(1, sizeof(hashtable));
-  
-  htb->size = legalize_tablesize(raw_size);
-  htb->bucket = calloc(htb->size, sizeof(void*));
+  void *ptr = calloc(1, sizeof(hashtable) + sizeof(void*)*size);
+  hashtable *htb = (hashtable*)ptr;
+  htb->bucket = ptr + sizeof(hashtable);
+
+  htb->size = size;
+  htb->count = 0;
+  htb->chain_off = offset;
 
   return htb;
 }
 
-/* void build_hashtable(hashtable *htb, uint32_t key, void *node) */
-/* { */
-/*   assert(htb->node_type == TYPE_FINFO || htb->node_type == TYPE_BINFO); */
-/*   struct finfo *fn; */
-/*   struct binfo *bn; */
+
+// cast void** to char** so it can be dereferenced
+#define get_chain(htb, node) (*((char**)(node+htb->chain_off)))
+
+void hashtable_insert(hashtable *htb, uint64_t key, void *node)
+{
+  assert(htb && node);
+  void **head = htb->bucket + key;
   
-/*   if (htb->node_type == TYPE_FINFO) { */
-/*     struct finfo *node_new = (struct finfo*)node; */
-/*     struct finfo *node_old = (struct finfo*)(*(htb->node+key)); */
-/*     node_new->chain = node_old; */
-/*     *(htb->node+key) = node_new; */
-    
-/*   } else { */
-/*     //struct binfo ... */
-/*   } */
+  get_chain(htb, node) = *head;
+  *(htb->bucket + key) = node;
+  htb->count++;
+}
+
+void *hashtable_remove(hashtable *htb, uint64_t key, void *target)
+{
+  assert(htb && target);
+  void **head = htb->bucket + key;
   
-/* } */
+  void *prev = NULL;
+  void *cur = *head;
+  void *next = get_chain(htb, cur);
+
+  while (next && cur != target) {
+    prev = cur;
+    cur = next;
+    next = get_chain(htb, next);
+  }
+
+  assert(cur == target);
+
+  if (prev)
+    get_chain(htb, prev) = next;
+  else
+    *head = next;
+  
+  htb->count--;
+  return target;
+}
+
+void* hashtable_search(hashtable *htb, uint64_t key, void *preq, bool (*hit)(void *, void *))
+{
+  assert(htb && preq && hit);
+  int i;
+  void *node = *(htb->bucket + key);
+
+  for (i = 0; node && !hit(preq, node); i++)
+    node = get_chain(htb, node);
+  
+  return node;
+}
+
+void traverse_hashtable(hashtable *htb, void (*fn)(void *))
+{
+  assert(htb && fn);
+  uint64_t i;
+  void *cur, *next;
+  cur = next = NULL;
+
+  for (i = 0; i < htb->size; i++)
+    if (*(htb->bucket + i)) {
+      cur = (htb->bucket)[i];
+      while (cur) {
+	next = get_chain(htb, cur);
+	fn(cur);
+	cur = next;
+      }
+    }
+  
+}
 
 void free_hashtable(hashtable *htb)
 {
-  assert(htb && htb->bucket);
-  free(htb->bucket);
+  assert(htb);
   free(htb);
-
 }

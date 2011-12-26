@@ -1,5 +1,5 @@
 /*
- * Entry function of client side
+ *
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -19,15 +19,8 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <netdb.h>
 
-#ifndef _FSS_CLIENT_H
-#define _FSS_CLIENT_H
+int tcp_connect(const char *host, uint16_t port);
+int tcp_listen(uint16_t port);
 
-#include "options.h"
-
-void entry_client(const struct options *o);
-int connect_to_server();
-
-
-
-#endif

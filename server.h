@@ -25,6 +25,10 @@
 
 #include "options.h"
 
+#ifndef INFTIM
+#define INFTIM -1
+#endif
+
 void entry_server(const struct options *o);
 
 

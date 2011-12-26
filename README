@@ -25,7 +25,7 @@ Table of contents :
 
 4.  About License
 -----------------
-    sha1.c, sha1.h are licensed under FPL (refer to file license.txt).
-    Other code files are licensed under GPLv3 (refer to file COPYING)
+    sha1.c, sha1.h come from git, licensed under GPLv2.
+    Other souce code are all written by me, licensed under GPLv3
     unless explictly otherwise stated.
 

@@ -19,39 +19,66 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define _FILE_OFFSET_BITS 64
+
 #include "sha1.h"
 #include "digest.h"
+#include "utils.h"
 #include "log.h"
 #include <sys/stat.h>
 #include <assert.h>
 #include <string.h>
+#include <inttypes.h>
+#include <endian.h>
 #include <errno.h>
+
 extern int errno;
 
-static char* export_to_str(SHA1Context *sha1, char *digest, size_t size)
+const char *digest2hex(const char *digest)
 {
   int i;
-  char temp[SHA1_STR_LEN];
+  static char hexstr[DIGEST_STR_LEN];
+  uint32_t *t = (uint32_t*)digest;
 
-  if (size < 2)
-    return 0;
-  
-  for (i = 0; i < 5 && 8*i < size; i++)
-    snprintf(temp+8*i, 8+1, "%08x", sha1->Message_Digest[i]);
-      
-  temp[SHA1_STR_LEN-1] = 0;
+  for(i = 0; i < 5; i++) // `be32toh()' defined in endian.h
+    snprintf(hexstr+8*i, 9, "%08x", be32toh(t[i]));
 
-  strncpy(digest, temp, size-1);
-  digest[size-1] = 0;
+  return hexstr;
+}
+
+const char *hex2digest(const char *hexstr)
+{
+  int i;
+  uint32_t tmp;
+  static unsigned char digest[DIGEST_BYTES];
+
+  for (i = 0;i < 5; i++) {
+    sscanf(hexstr + 8*i, "%08x", &tmp); // `htobe32()' defined in endian.h
+    *(uint32_t*)(digest + i*4) = htobe32(tmp);
+  }
   
   return digest;
 }
 
-char* file_digest(FILE* fp, char *digest, size_t size)
+// cast the bytes at the end `digest' to uint64_t as hash key
+uint64_t digest2hashkey(const char *digest, uint64_t mask)
+{
+  assert(digest);
+  uint64_t keyspan = 0;
+  
+  size_t offset = DIGEST_BYTES > 8 ? (DIGEST_BYTES - 8) : 0;
+  memcpy(&keyspan, digest+offset, min(8, DIGEST_BYTES));
+  
+
+  return be64toh(keyspan) & mask; // `be64toh()' defined in endian.h
+}
+
+
+unsigned char* file_digest(FILE* fp, unsigned char *digest)
 {
   assert(fp);
   off_t save_pos;
-  SHA1Context sha;
+  blk_SHA_CTX c;;
   int len;
   unsigned char buf[SHA1_BUF_LEN];
 
@@ -59,19 +86,19 @@ char* file_digest(FILE* fp, char *digest, size_t size)
   if (save_pos)
     Log_die(DIE_FAILURE, LOG_ERR, "ftello() failed");
 
-  SHA1Reset(&sha);
+  blk_SHA1_Init(&c);
 
   fseeko(fp, 0, SEEK_SET);
-  while(len = fread(buf, sizeof(unsigned char), SHA1_BUF_LEN, fp))
-    SHA1Input(&sha, buf, len);
+  while((len = fread(buf, sizeof(unsigned char), SHA1_BUF_LEN, fp)) > 0)
+    blk_SHA1_Update(&c, buf, len);
 
-  SHA1Result(&sha);
+  blk_SHA1_Final(digest, &c);
   fseeko(fp, save_pos, SEEK_SET);
 
-  return export_to_str(&sha, digest, size);
+  return digest;
 }
 
-char* file_digest_name(const char *fullname, char *digest, size_t size)
+unsigned char* file_digest_name(const char *fullname, unsigned char *digest)
 {
   FILE *fp = NULL;
   
@@ -79,59 +106,36 @@ char* file_digest_name(const char *fullname, char *digest, size_t size)
   if (!fp)
     Log_die(DIE_FAILURE, LOG_ERR, "fopen() %s failed", fullname);
     
-  file_digest(fp, digest, size);
+  file_digest(fp, digest);
   fclose(fp);
   
   return digest;
 }
 
-char* str_digest(const char *text, char* digest, size_t size)
+unsigned char* str_digest(const char *text)
 {
   assert(text);
-  SHA1Context sha;
-  SHA1Reset(&sha);
+  static unsigned char digest[DIGEST_BYTES];
+  blk_SHA_CTX c;
+  
+  blk_SHA1_Init(&c);
+  blk_SHA1_Update(&c, text, strlen(text));
+  blk_SHA1_Final(digest, &c);
 
-  SHA1Input(&sha, (const unsigned char*)text, strlen(text));
-  if (!SHA1Result(&sha))
-    Log_die(DIE_FAILURE, LOG_ERR, "SHA1Result() failed");
-
-  return export_to_str(&sha, digest, size);
+  return digest;
 }
 
-/* int get_sha1(const char *fullname, char *digest, size_t size) */
-/* { */
-/*   SHA1Context sha; */
-/*   struct stat sb; */
-/*   FILE *file; */
+unsigned char *mem_digest(const void *addr, size_t size,
+			  unsigned char *digest)
+{
+  assert(addr);
+  blk_SHA_CTX c;
 
-/*   if (stat(fullname, &sb) < 0) { */
-/*     if (errno == ENOENT) */
-/*       return ENOENT; */
-/*     else { */
-/*       perror("@get_sha1(): stat() failed"); */
-/*       return 1; */
-/*     } */
-/*   } */
+  blk_SHA1_Init(&c);
+  blk_SHA1_Update(&c, addr, size);
+  blk_SHA1_Final(digest, &c);
 
-/*   // Normally it's DIR */
-/*   if (!S_ISREG(sb.st_mode)) { */
-/*     SHA1Reset(&sha); */
-/*     SHA1Result(&sha); */
-/*     export_to_str(&sha, digest, size); */
-/*     return 0; */
-/*   } */
-  
-/*   if (!(file = fopen(fullname, "rb"))) { */
-/*     perror("@get_sha1(): fopen() failed"); */
-/*     return 1; */
-/*   } */
-  
-/*   if (sha1_file(file, digest, size)) { */
-/*     fprintf(stderr, "@get_sha1(): sha1_file() failed\n"); */
-/*     return 1; */
-/*   } */
-  
-/*   fclose(file); */
-/*   return 0; */
+  return digest;
+}
 
-/* } */
+

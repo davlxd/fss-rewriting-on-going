@@ -28,7 +28,8 @@
 
 #define MAX_LOG_LEN       1024
 
-void init_log(const struct options *o);
+void init_log();
+void reinit_log(const struct options *o);
 int close_log();
 
 #define Log(p, args...) do_log(p, NULL, NULL, 0, args)

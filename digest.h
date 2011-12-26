@@ -20,6 +20,7 @@
  */
 
 #include <stdio.h>
+#include <inttypes.h>
 
 #ifndef _FSS_DIGEST_H_
 #define _FSS_DIGEST_H_
@@ -27,33 +28,27 @@
 
 #define SHA1_BUF_LEN 1024
 
+#define SHA1_BYTES   20
+#define DIGEST_BYTES 20
+
+
 #define SHA1_STR_LEN 41
 #define DIGEST_STR_LEN SHA1_STR_LEN
 
 #define hash_str(text, digest, size) sha1_str(text, digest, size)
 
-char* str_digest(const char *text, char *digest, size_t size);
-char* file_digest(FILE* fp, char *digest, size_t size);
+const char* digest2hex(const char *digest);
+const char* hex2digest(const char *hexstr);
 
-char *file_digest_name(const char* fullname, char *digest, size_t size);
-  
+// extract hashing key(uint64_t) from digest byte array
+uint64_t digest2hashkey(const char *digest, uint64_t mask);
 
-/* // sha1_digest refers to original sha1 digest of file's content */
-/* // hash_digest refers to sha1_checksum(sha1_digest+[relaname]) */
+unsigned char* file_digest(FILE* fp, unsigned char *digest);
+unsigned char* file_digest_name(const char* path, unsigned char *digest);
+unsigned char* str_digest(const char *text);
+unsigned char* mem_digest(const void *addr, size_t sz, unsigned char *d);
 
-/* // if fullname doesn't exist, following 2 funtions will return ENOENT */
-/* int get_sha1(const char *fullname, char *digest, size_t size); */
-/* int get_hash(const char *fullname, const char *relaname, */
-/* 	     char *sha1_digest, size_t sha1_size, */
-/* 	     char *hash_digest, size_t hash_size); */
-
-/* int sha1_file(FILE *file, char *digest, size_t size); */
-/* int sha1_str(const char *text, char *digest, size_t size);  */
 
 #endif
 
-  
-  
-  
-    
     

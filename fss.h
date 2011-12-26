@@ -24,14 +24,31 @@
 #ifndef _F_SS_H_
 #define _F_SS_H_
 
-// default configuration
-#define INCLUDE_HIDDEN          0
-#define BUF_LEN                 4096
-#define MAX_PATH_LEN            1024
+#include <limits.h>
 
-#define DEFAULT_BLOCK_LEN       700
-#define DEFAULT_PORT            3375
-#define DEFAULT_FSS_DIR         "." PACKAGE_TARNAME
+#ifdef	PATH_MAX
+#define MAX_PATH_LEN		PATH_MAX
+#else
+#define MAX_PATH_LEN		1024
+#endif
+
+#define DEPTH_OF_NFTW           10
+
+#define BUF_LEN			4096
+#define LISTEN_BACKLOG          10
+#define MAX_CLIENTS             10
+#define POLL_TIMEOUT            (1000 * 60)
+
+// Default configuration
+#define DEFAULT_BLOCK_LEN	700
+#define DEFAULT_PORT		3375
+#define DEFAULT_FSS_DIR		"." PACKAGE_TARNAME
+#define DEFAULT_TRASH_DIR       ".trash"
+
+// retry seconds if cannot establish tcp connect
+#define DEFAULT_RETRY_SEC       5
+// alarm timeout for block syscall read()/write()
+#define DEFAULT_TIMEOUT         5
 
 
 #endif

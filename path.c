@@ -30,7 +30,7 @@ extern int errno;
 
 
 static const char *basepath; // basepath is client's monitored path
-                             // or server's storage path
+                             // or server's storage path, may end with '/'
 void set_basepath(const char *p)
 {
   if (!p)
@@ -46,7 +46,7 @@ void set_basepath(const char *p)
     Log_die(DIE_FAILURE, LOG_ERR, "Monitored directory dosen't exist, exit!");
   else if (rv < 0)
     Log_die(DIE_FAILURE, LOG_ERR, "stat(%s) failed", p);
-    
+
   basepath = p;
 }
 
@@ -101,40 +101,25 @@ char *pathncat2(char *path0, const char *path1, const char *path2,
 }
 
 
-char *full2rela(const char *fullname, char *relaname, size_t size)
+char *full2rela(char *fullname)
 {
+  if (!strprefix(basepath, fullname))
+    Log_die(DIE_FAILURE, LOG_ERR, "basepath %s is not a prefix of fullname %s", basepath, fullname);
+
   size_t start_pos = strlen(basepath);
-  
+					
   while (*(fullname + start_pos) == *PATH_SEP)
     start_pos++;
 
-  // If relaname is NULL, size is ignored and just return a pointer
-  // pointing to original char *
-  if (relaname == NULL)
-    return fullname + start_pos;
-  
-  if (size <= strlen(fullname) - start_pos)
-    Log_die(DIE_FAILURE, LOG_ERR, "relaname char array is not big enough");
-
-  if (!strprefix(basepath, fullname))
-    Log_die(DIE_FAILURE, LOG_ERR, "basepath %s is not a prefix of fullname %s", basepath, fullname);
-  
-  if (!strncpy(relaname, fullname + start_pos, size))
-    Log_die(DIE_FAILURE, LOG_ERR, "strncpy() failed");
-
-  return relaname;
-  
+  return fullname + start_pos;
 }
+
 
 char *rela2full(const char *relaname, char *fullname, size_t size)
 {
   if (size <= strlen(relaname) + strlen(basepath)) 
     Log_die(DIE_FAILURE, LOG_ERR, "fullname char array is not big enough to put %s plus %s", basepath, relaname);
-  
-  if (!strncpy(fullname, basepath, strlen(basepath)+1))
-    Log_die(DIE_FAILURE, LOG_ERR, "strncpy() failed");
-  
-  return pathncat(fullname, relaname, size);
-  
+
+  return pathncat2(fullname, basepath, relaname, size);
 }
 

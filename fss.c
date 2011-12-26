@@ -21,53 +21,25 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "log.h"
 #include "utils.h"
 #include "options.h"
 #include "path.h"
-#include "fs.h"
+#include "io.h"
 #include "setsignal.h"
 #include <stdlib.h>
-//#include "server.h"
-//#include "client.h"
-#include <unistd.h>
+#include "server.h"
+#include "client.h"
 #include <errno.h>
 
 extern int errno;
 
-static void test_flist(struct options* o)
+static void test_network(struct options* o)
 {
-  char buf[2];
-  memset(buf, 0, 2);
-  ssize_t num;
-  init_flist(o);
-  load_flist();
-
-  while ((num = read(STDIN_FILENO, buf, 2)) > 0)
-    switch (*buf) {
-    case 'q':
-      unload_cleanup_flist();
-      printf("Exit\n");
-      exit(EXIT_SUCCESS);
-    case 'u':
-      printf("\n");
-      update_flist();
-      print_flist();
-      break;
-    case 'w':
-      unload_flist();
-      print_flist();
-      break;
-    default:
-      fprintf(stderr, "TEST: unknown input %c: %s\n", *buf, strerror(errno));
-    }
-  
-  if (num < 0) {
-    perror("TEST: read from STDIN failed");
-    exit(EXIT_FAILURE);
-  }
-    
+  if (o->mode == MODE_CLIENT)
+    entry_client(o);
+  else
+    entry_server(o);
 }
 
 int main(int argc, char *argv[])
@@ -75,19 +47,20 @@ int main(int argc, char *argv[])
 
   struct options o;
   set0(o);
-
+  init_log();
+  
   load_default_options(&o);
   parse_config_file(&o);
   parse_argv(argc, argv, &o);
-  init_log(&o);
-
+  reinit_log(&o);
+  
   set_basepath(o.path); // for path.c/h
   set_umask(o.umask);   // for fs.c/h
   
   /* set SIGINT SIGTREM to die routine */
-  init_signal_handler();
+  set_int_term();
 
-  test_flist(&o);
+  test_network(&o);
   
   die(DIE_SUCCESS);
 

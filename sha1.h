@@ -1,54 +1,29 @@
 /*
- *  sha1.h
+ * SHA1 routine optimized to do word accesses rather than byte accesses,
+ * and to avoid unnecessary copies into the context array.
  *
- *  Copyright (C) 1998, 2009
- *  Paul E. Jones <paulej@packetizer.com>
- *  All Rights Reserved
- *
- *****************************************************************************
- *  $Id: sha1.h 12 2009-06-22 19:34:25Z paulej $
- *****************************************************************************
- *
- *  Description:
- *      This class implements the Secure Hashing Standard as defined
- *      in FIPS PUB 180-1 published April 17, 1995.
- *
- *      Many of the variable names in the SHA1Context, especially the
- *      single character names, were used because those were the names
- *      used in the publication.
- *
- *      Please read the file sha1.c for more information.
- *
+ * This was initially based on the Mozilla SHA1 implementation, although
+ * none of the original Mozilla code remains.
  */
 
 #ifndef _SHA1_H_
 #define _SHA1_H_
 
-/* 
- *  This structure will hold context information for the hashing
- *  operation
- */
-typedef struct SHA1Context
-{
-    unsigned Message_Digest[5]; /* Message Digest (output)          */
+typedef struct {
+	unsigned long long size;
+	unsigned int H[5];
+	unsigned int W[16];
+} blk_SHA_CTX;
 
-    unsigned Length_Low;        /* Message length in bits           */
-    unsigned Length_High;       /* Message length in bits           */
-
-    unsigned char Message_Block[64]; /* 512-bit message blocks      */
-    int Message_Block_Index;    /* Index into message block array   */
-
-    int Computed;               /* Is the digest computed?          */
-    int Corrupted;              /* Is the message digest corruped?  */
-} SHA1Context;
+void blk_SHA1_Init(blk_SHA_CTX *ctx);
+void blk_SHA1_Update(blk_SHA_CTX *ctx, const void *dataIn, unsigned long len);
+void blk_SHA1_Final(unsigned char hashout[20], blk_SHA_CTX *ctx);
 
 /*
- *  Function Prototypes
- */
-void SHA1Reset(SHA1Context *);
-int SHA1Result(SHA1Context *);
-void SHA1Input( SHA1Context *,
-                const unsigned char *,
-                unsigned);
+#define git_SHA_CTX	blk_SHA_CTX
+#define git_SHA1_Init	blk_SHA1_Init
+#define git_SHA1_Update	blk_SHA1_Update
+#define git_SHA1_Final	blk_SHA1_Final
+*/
 
 #endif

@@ -23,6 +23,28 @@
 #include "log.h"
 #include <signal.h>
 
+// This is function comes from APUE/UNP
+void (*setsignal(int signo, void (*handler)(int))) (int)
+{
+  struct sigaction act, oact;
+  act.sa_handler = handler;
+  sigemptyset(&act.sa_mask);
+  act.sa_flags = 0;
+  
+  if (signo == SIGALRM) {
+#ifdef SA_INTERRUPT
+    act.sa_flags |= SA_INTERRUPT;
+#endif
+  } else {
+#ifdef SA_RESTART
+    act.sa_flags |= SA_RESTART;
+#endif
+  }
+
+  if (sigaction(signo, &act, &oact) < 0)
+    return SIG_ERR;
+  return oact.sa_handler; // return prev sig handler
+}
 
 static void sig_int_term(int signo)
 {
@@ -30,12 +52,12 @@ static void sig_int_term(int signo)
 }
 
 
-void init_signal_handler()
+void set_int_term()
 {
-  if (signal(SIGINT, sig_int_term) == SIG_ERR) {
+  if (setsignal(SIGINT, sig_int_term) == SIG_ERR) {
     Log_die(DIE_FAILURE, LOG_ERR, "init_signal_handler failed");
   }
-  if (signal(SIGTERM, sig_int_term) == SIG_ERR) {
+  if (setsignal(SIGTERM, sig_int_term) == SIG_ERR) {
     Log_die(DIE_FAILURE, LOG_ERR, "init_signal_handler failed");
   }
 

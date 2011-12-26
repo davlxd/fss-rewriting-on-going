@@ -1,5 +1,5 @@
 /*
- * Build hashtable for flist and blist
+ * Open hashing 
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -24,18 +24,33 @@
 #define _FSS_HASHTABLE_H
 
 #include <inttypes.h>
+#include "utils.h" // for bool type
 
 #define MIN_HASHTABLE_SIZE ((uint32_t)1 << 8)
 #define MAX_HASHTABLE_SIZE ((uint32_t)1 << 16)
 
 typedef struct {
-  uint32_t size;
+  uint64_t size;
+  uint64_t count; // Longest Chain Ever
+
+  // `chain_off' is the offset of struct member `chain' of the struct
+  // `*bucket' point to
+  // I can use this to acquire the next node address of `*bucket' without
+  // knowning specific struct type `*bucket' point to
+  size_t chain_off;
   void **bucket;
   
 } hashtable;
 
-// raw_size is file/directories number come from "statinfo.fss"
-hashtable* init_hashtable(uint64_t raw_size);
+uint64_t power_of_2_ceiling(uint64_t x);
+hashtable* init_hashtable(uint64_t size, size_t offset);
+void hashtable_insert(hashtable *htb, uint64_t key, void *node);
+void *hashtable_remove(hashtable *htb, uint64_t key, void *target);
+
+// encapsulate all prerequisite of hit to node type
+void *hashtable_search(hashtable *htb, uint64_t key, void *preq,
+		       bool (*hit)(void *, void *));
+void traverse_hashtable(hashtable *htb, void (*fn)(void *));
 void free_hashtable(hashtable *htb);
 
 

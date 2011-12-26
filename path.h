@@ -28,15 +28,15 @@ n * GNU General Public License for more details.
 
 #define IS_HIDDEN(s) (*get_tail((s)) == '.')
 
-// append str1 to str0, size refers to total size of str0
-void set_basepath(const char *p);
+
+void set_basepath(const char *p); // set global variable then trim p
 
 const char *get_tail(const char *path);
 
 char *pathncat(char *path0, const char *path1, size_t size);
 char *pathncat2(char *, const char *, const char *, size_t);
 
-char *full2rela(const char *fullname, char *relaname, size_t size);
+char *full2rela(char *fullname);
 char *rela2full(const char *relaname, char *fullname, size_t size);
 
 

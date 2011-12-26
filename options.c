@@ -264,6 +264,7 @@ static void check_options(struct options *o)
 {
   if (!o->path)
     Log_die(DIE_FAILURE, LOG_ERR, "path is unset");
+  
   if (!verify_dir(o->path))
     Log_die(DIE_FAILURE, LOG_ERR, "path %s is not a valid directory", o->path);
 
@@ -313,35 +314,3 @@ int parse_argv(const int argc, char *argv[], struct options *o)
   
   check_options(o);
 }
-
-
-/*
-int parse_argv(const int argc, char *argv[], struct options *o)
-{
-  int i, j, k;
-  assert(argc && argv && o);
-  if (argc <= 1)
-    print_usage();
-
-  for (i = 1; i < argc; i++) {
-    char *option[MAX_VALUE_NUM];
-    set0(option);
-
-    if (strncmp(argv[i], "-", 1))
-      Log_die(DIE_FAILURE, LOG_ERR, "Parsing %s, without leading -", argv[i]);
-    
-    option[0] = argv[i++];
-
-    for (j = 1;
-	 (j < MAX_VALUE_NUM) && (i < argc) && (strncmp(argv[i], "-", 1));
-	 j++, i++) 
-      option[j] = argv[i];
-
-    set_option(option, o);
-  }
-
-  check_options(o);
-}
-*/
-
-

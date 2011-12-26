@@ -1,5 +1,5 @@
 /*
- * Entry function of client side
+ * Stack for pointers
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -19,14 +19,28 @@
  * along with fss.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "inttypes.h"
 
-#ifndef _FSS_CLIENT_H
-#define _FSS_CLIENT_H
+#ifndef _FSS_PTR_STACK_H
+#define _FSS_PTR_STACK_H
 
-#include "options.h"
+typedef struct {
+  uint64_t size;
+  uint64_t stacktop;
 
-void entry_client(const struct options *o);
-int connect_to_server();
+  void **elem;
+  
+} ptrstack;
+
+
+ptrstack* init_ptrstack(uint64_t sz);
+
+void* ptrstack_top(ptrstack *ps);
+void* ptrstack_pop(ptrstack *ps);
+void* ptrstack_push(ptrstack *ps, void *eptr);
+
+// only cleanup struct ptrstatck
+void cleanup_ptrstack(ptrstack *ps);
 
 
 

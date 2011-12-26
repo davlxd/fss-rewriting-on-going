@@ -1,5 +1,7 @@
 /*
- * Entry function of client side
+ * Read messages from socket file descriptor, different tagged incoming
+ * messages will be handled in different functions via a function table.
+ * This is where the main business logic lies.
  *
  * Copyright (c) 2010, 2011 lxd <i@lxd.me>
  * 
@@ -20,13 +22,22 @@
  */
 
 
-#ifndef _FSS_CLIENT_H
-#define _FSS_CLIENT_H
+#ifndef _FSS_CORE_H
+#define _FSS_CORE_H
 
-#include "options.h"
+#include <inttypes.h>
 
-void entry_client(const struct options *o);
-int connect_to_server();
+#define FINFO ((uint64_t)1 << 0)
+#define REQ_FLIST ((uint64_t)1 << 1)
+#define REQ_BINFO ((uint64_t)1 << 2)
+
+typedef struct {
+  uint64_t tag;
+  void (*func)(int fd);
+  
+}tagtable;
+
+void tag_switch(uint64_t tag, int fd);
 
 
 

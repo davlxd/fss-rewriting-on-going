@@ -21,15 +21,16 @@
 
 #define _XOPEN_SOURCE 500
 
+#include <ftw.h>
 #include "fss.h"
 #include "flist.h"
 #include "path.h"
 #include "hashtable.h"
-#include "fs.h"
+#include "io.h"
 #include "log.h"
 #include "digest.h"
+#include "utils.h" //for OFFSETOF
 #include <time.h>
-#include <ftw.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
@@ -52,8 +53,6 @@ static char digest_path[MAX_PATH_LEN];
 static FILE *statinfo_fp;
 static FILE *relapath_fp;
 static FILE *digest_fp;
-
-static void print_finfo(finfo** head, finfo *fi); // Test function
 
 
 static void set_path(struct options *o)
@@ -128,152 +127,88 @@ static void close_fp()
   do_close_fp(&digest_fp);
 }
 
+finfo* alloc_finfo(uint16_t relapath_len)
+{
+  void* ptr = calloc(1, sizeof(finfo) + DIGEST_BYTES + relapath_len);
+  finfo* fi = (finfo*)ptr;
+  
+  fi->digest = (unsigned char*)(ptr + sizeof(finfo));
+  fi->relapath = (char*)(ptr + sizeof(finfo) + DIGEST_BYTES);
 
+  fi->pathlen = relapath_len;
+  return fi;
+}
+
+void cleanup_finfo(finfo *fi)
+{
+  free(fi);
+}
+
+uint64_t hashing(finfo* fi)
+{
+  assert(fi && fi->relapath);
+  return digest2hashkey(str_digest(fi->relapath), (hashtb->size - 1));
+}
+
+static void remove_finfo(void *fi)
+{
+  cleanup_finfo(hashtable_remove(hashtb, hashing((finfo*)fi), fi));
+}
 
 static bool finfo_valid(finfo *fi)
 {
   return fi->ucount == g_ucount ? true : false;
 }
 
-static uint32_t get_hash_key(const char *relapath)
+
+static bool compar_file_digest(const char *f0, const char *f1)
 {
-  uint32_t keyspan = 0;
-  char digest[DIGEST_STR_LEN]; set0(digest);
-  char *ptr = digest;
+  unsigned char digest0[DIGEST_BYTES]; set0(digest0);
+  unsigned char digest1[DIGEST_BYTES]; set0(digest1);
 
-  str_digest(relapath, digest, DIGEST_STR_LEN);
-  
-  int offset = DIGEST_STR_LEN > 9 ? (DIGEST_STR_LEN - 9) : 0;// 9 = (32/4 + 1)
-  
-  ptr += offset;
-  sscanf(ptr, "%" SCNx32, &keyspan);
-  
-  return (keyspan & (hashtb->size - 1));
-}
+  file_digest_name(f0, digest0);
+  file_digest_name(f1, digest1);
 
-static finfo* alloc_finfo(uint16_t relapath_len)
-{
-  void* ptr = calloc(1, sizeof(finfo) + DIGEST_STR_LEN + relapath_len);
-  finfo* fi = (finfo*)ptr;
-  
-  fi->digest = (char*)(ptr + sizeof(finfo));
-  fi->relapath = (char*)(ptr + sizeof(finfo) + DIGEST_STR_LEN);
-
-  return fi;
+  return !memcmp(digest0, digest1, DIGEST_BYTES);
 }
 
 
-static void hashtable_insert(finfo* fi)
+static bool hit(void *_preq, void *_fi)
 {
-  uint32_t key = get_hash_key(fi->relapath);
-  finfo *head = (finfo*)(*(hashtb->bucket + key));
-  
-  Log(LOG_INFO, "Inserting \"%s\" to hashtable, key = %"PRIu32, fi->relapath, key);
-  //INFO, DEBUG
-  print_finfo(NULL, fi);
-
-  fi->chain = head;
-  *(hashtb->bucket + key) = fi;
-}
-
-static bool compa_file_digest(const char *f0, const char *f1)
-{
-  char digest0[DIGEST_STR_LEN]; set0(digest0);
-  char digest1[DIGEST_STR_LEN]; set0(digest1);
-
-  file_digest_name(f0, digest0, DIGEST_STR_LEN);
-  file_digest_name(f1, digest1, DIGEST_STR_LEN);
-
-  return streq(digest0, digest1);
-}
-
-static bool hit(finfo *fi, const char *fullname, const struct stat *sb)
-{
-  const char *relapath = full2rela(fullname, NULL, 0);
+  finfo *preq = (finfo*)_preq;
+  finfo *fi = (finfo*)_fi;
 
   // Check if same file type(FILE|DIR)
-  if (!SAME_FILE_TYPE(fi->mode, sb->st_mode))
+  if (!SAME_FILE_TYPE(preq->mode, fi->mode))
     return false;
 
   // Check if same relative path string
-  if (!streq(relapath, fi->relapath))
+  if (!streq(preq->relapath, fi->relapath))
     return false;
 
   // If --force-use-digest is set, check if same digest string
   if (S_ISREG(fi->mode) && force_use_digest) {
-    char full[MAX_PATH_LEN]; set0(full);
-    rela2full(fi->relapath, full, MAX_PATH_LEN);
+    char full_preq[MAX_PATH_LEN]; set0(full_preq);
+    char full_fi[MAX_PATH_LEN]; set0(full_fi);
+    
+    rela2full(preq->relapath, full_preq, MAX_PATH_LEN);
+    rela2full(fi->relapath, full_fi, MAX_PATH_LEN);
 
-    if (!compa_file_digest(full, fullname))
+    if (!compar_file_digest(full_preq, full_fi))
       return false;
 
     // If --force-use-digest is not set, check if last modifed time is same
-  } else if (fi->mtime != sb->st_mtime)
+    // and last modified time should not be applied to directories
+  } else if (S_ISREG(fi->mode) && preq->mtime != fi->mtime)
     return false;
 
   return true;
 }
 
-static finfo* hashtable_search(const char *fullname, const struct stat *sb)
-{
-  const char *relapath = full2rela(fullname, NULL, 0);
-  uint32_t key = get_hash_key(relapath);
-  finfo **head = (finfo **) (hashtb->bucket + key);
-  finfo *fi = *head;
-
-  while (fi && !hit(fi, fullname, sb))
-    fi = fi->chain;
-  
-  return fi;
-}
-
-static void hashtable_remove(finfo **head, finfo *target)
-{
-  assert(*head && target);
-
-  finfo *prev = NULL;
-  finfo **cur = head;
-  finfo *next = (*cur)->chain;
-
-  while (next && *cur != target) { 
-    prev = *cur;
-    *cur = next;
-    next = next->chain;
-  }
-  assert(*cur == target);
-
-  free(*cur);
-  
-  if (prev)
-    prev->chain = next;
-  else
-    *cur = next;
-}
-
-static void traverse_flist(void (*fn)(finfo**, finfo* ))
+static void traverse_flist(void (*fn)(void* ))
 {
   Log(LOG_INFO, "Traversing flist ...");
-  uint32_t i = 1;
-  //next refers to the next finfo after cur in bucket linked list
-  finfo *cur, *next;
-  cur = next = NULL;
-
-  for (i = 0; i < hashtb->size; i++)
-    if (*(hashtb->bucket + i)) {
-      Log(LOG_INFO, "Index = %"PRIu32, i);
-      cur = (hashtb->bucket)[i];
-      while (cur) {
-	next = cur->chain;
-      
-	if (!finfo_valid(cur))
-	  hashtable_remove((finfo**)(hashtb->bucket + i), cur);
-	else
-	  fn((finfo**)(hashtb->bucket + i), cur);
-      
-	cur = next;
-      }//end while(...
-    }//end if 
-  
+  traverse_hashtable(hashtb, fn);
 }
 
 
@@ -301,8 +236,8 @@ static finfo* str2finfo(char* _statinfo, char* _relapath, char* _digest)
 	 &fi->pathlen);
   
   assert(_pathlen == fi->pathlen);
-  strncpy(fi->digest, _digest, DIGEST_STR_LEN);
-  strncpy(fi->relapath, _relapath, _pathlen);
+  memcpy(fi->digest, (unsigned char*)hex2digest(_digest), DIGEST_BYTES);
+  strncpy(fi->relapath, _relapath, _pathlen); 
 
   return fi;
 }
@@ -321,7 +256,7 @@ static void do_load_flist()
 
   char statinfo_line[MAX_PATH_LEN]; // Just borrow MAX_PATH_LEN
   char relapath_line[MAX_PATH_LEN];
-  char digest_line[DIGEST_STR_LEN + 1]; // Have to handle LF
+  char digest_line[DIGEST_STR_LEN + 1]; // read LF in digest_line then trimmed by file_getline
   set0(statinfo_line);
   set0(relapath_line);
   set0(digest_line);
@@ -334,7 +269,7 @@ static void do_load_flist()
     
     fi = str2finfo(statinfo_line, relapath_line, digest_line);
     fi->ucount = now;
-    hashtable_insert(fi);
+    hashtable_insert(hashtb, hashing(fi), fi);
   }
 }
 
@@ -354,8 +289,9 @@ void load_flist()
     assert(filesize % DIGEST_STR_LEN == 0);
     line_num = filesize/DIGEST_STR_LEN;
   }
-    
-  hashtb = init_hashtable(line_num);
+
+  hashtb = init_hashtable(power_of_2_ceiling(line_num),
+			  OFFSETOF(finfo, chain));
   Log(LOG_INFO, "HASH TABLE SIZE = %" PRIu32, hashtb->size);
 
   do_load_flist();
@@ -375,7 +311,7 @@ static int do_update_flist(const char *fullname,
   // -----------------------filters---------------------------
   
   // Skip monitored directory itself
-  if (streq(fullname, basepath))
+  if (strncmp(fullname, basepath, strlen(fullname)) == 0)
     return 0;
     
   // Skip *.fss files under /foo/.fss directory
@@ -393,12 +329,19 @@ static int do_update_flist(const char *fullname,
 
   //---------------------End--of--filters----------------------
 
+  finfo preq;
+  preq.mode = sb->st_mode;
+  preq.size = sb->st_size;
+  preq.mtime = sb->st_mtime;
+  preq.relapath = full2rela(fullname); // Attention! const violated
+  preq.pathlen = strlen(preq.relapath);
   
-  // If this fullname-file is searchable, which means he's already
-  // in flist, so I just update its ucount
-  if ((fi = hashtable_search(fullname, sb))) {
+  if ((fi = hashtable_search(hashtb, hashing(&preq), &preq, hit))) {
     Log(LOG_INFO, "\t\t\"%s\" searchable, update its ucount", fullname);
     fi->ucount = g_ucount;
+
+    if (S_ISDIR(sb->st_mode)) // Directories' mtime could be altered, update it
+      fi->mtime = sb->st_mtime;
   }
   
   // If not, Append a new one to flist, But:
@@ -406,7 +349,7 @@ static int do_update_flist(const char *fullname,
   // twice
   else {
     Log(LOG_INFO, "Updating flist: \"%s\" is new, create a new finfo");
-    const char* rela_ptr = full2rela(fullname, NULL, 0);
+    const char* rela_ptr = full2rela(fullname);
     size_t rela_len = strlen(rela_ptr) + 1;
     finfo* fi = alloc_finfo(rela_len);
 
@@ -416,10 +359,10 @@ static int do_update_flist(const char *fullname,
     fi->mtime = sb->st_mtime;
     fi->pathlen = rela_len;
 
-    file_digest_name(fullname, fi->digest, DIGEST_STR_LEN);
+    file_digest_name(fullname, fi->digest);
     strncpy(fi->relapath, rela_ptr, rela_len);
     
-    hashtable_insert(fi);
+    hashtable_insert(hashtb, hashing(fi), fi);
   }
       
   return 0;
@@ -441,8 +384,14 @@ void update_flist()
 }
 
 
-static void do_unload_flist(finfo **head, finfo *fi)
+static void do_unload_flist(void *_fi)
 {
+  finfo* fi = (finfo*)_fi;
+  if (!finfo_valid(fi)) {
+    remove_finfo(_fi);
+    return ;
+  }
+  
   fprintf(statinfo_fp,
 	  "%" PRIu32 "\t"
 	  "%" PRIu64 "\t"
@@ -455,11 +404,9 @@ static void do_unload_flist(finfo **head, finfo *fi)
 	  fi->pathlen );
   
   file_putline(relapath_fp, fi->relapath);
-  file_putline(digest_fp, fi->digest);
+  file_putline(digest_fp, digest2hex(fi->digest));
 
   Log(LOG_INFO, "Unloading finfo \"%s\" ...", fi->relapath);
-  //DEBUG, INFO
-  print_finfo(head, fi);
 }
 
  
@@ -475,18 +422,20 @@ void unload_flist()
   close_fp();
 }
 
+
 void cleanup_flist()
 {
-  traverse_flist(hashtable_remove);
+  traverse_flist(remove_finfo);
   free_hashtable(hashtb);
   hashtb = NULL;
 }
 
 
-static void do_unload_free_flist(finfo **head, finfo* fi)
+static void do_unload_free_flist(void* fi)
 {
-  do_unload_flist(head, fi);
-  hashtable_remove(head, fi);
+  if (finfo_valid((finfo*)fi))
+    do_unload_flist(fi);
+  remove_finfo(fi);
 }
    
 
@@ -510,31 +459,42 @@ void unload_cleanup_flist()
 //                          | test functions
 //                          v
 
-static void print_finfo(finfo **head, finfo* fi)
+static void print_finfo(void* _fi)
 {
-  if (!fi)  {// NULL
-    Log(LOG_INFO, "NULL\n");
+  finfo *fi = (finfo*)_fi;
+  if (!finfo_valid(fi)) {
+    remove_finfo(_fi);
     return ;
   }
-  Log(LOG_INFO, "\t%p (chain->%p): "
-	 "ucount=%" PRIu64 " " 
-	 "mode=0%06" PRIo32 " "
-	 "size=%" PRIu64 " "
-	 "mtime=%" PRIu64 " "
-	 "pathlen=%" PRIu16 " "
-	 "digest=\"%c%c%c%c...%c%c%c%c\" "
-	 "relapath=\"%s\""
-	 "\n"
-	 ,
-	 fi, fi->chain, 
-	 fi->ucount,
-	 fi->mode,
-	 fi->size,
-	 fi->mtime,
-	 fi->pathlen,
-	 *(fi->digest), *(fi->digest+1), *(fi->digest+2), *(fi->digest+3),
-	 *(fi->digest+36), *(fi->digest+37), *(fi->digest+38), *(fi->digest+39),
-	 fi->relapath
+  
+  if (fi == NULL)  {// NULL
+    Log(LOG_INFO, "K%" PRIu32 " NULL", hashing(fi));
+    return ;
+  }
+
+  const char *digesthex = digest2hex(fi->digest);
+  
+  Log(LOG_INFO, "\tK%" PRIu64
+      "%p (chain->%p): "
+      "ucount=%" PRIu64 " " 
+      "mode=0%06" PRIo32 " "
+      "size=%" PRIu64 " "
+      "mtime=%" PRIu64 " "
+      "pathlen=%" PRIu16 " "
+      "digest=\"%c%c%c%c...%c%c%c%c\" "
+      "relapath=\"%s\""
+      "\n"
+      ,
+      hashing(fi),
+      fi, fi->chain, 
+      fi->ucount,
+      fi->mode,
+      fi->size,
+      fi->mtime,
+      fi->pathlen,
+      *(digesthex), *(digesthex+1), *(digesthex+2), *(digesthex+3),
+      *(digesthex+36), *(digesthex+37), *(digesthex+38), *(digesthex+39),
+      fi->relapath
       );
 
 }

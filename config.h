@@ -1,11 +1,23 @@
 /* config.h.  Generated from config.h.in by configure.  */
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define to 1 if you have the `alarm' function. */
+#define HAVE_ALARM 1
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#define HAVE_FCNTL_H 1
+
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #define HAVE_FSEEKO 1
 
+/* Define to 1 if you have the `getpagesize' function. */
+#define HAVE_GETPAGESIZE 1
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
+
+/* Define to 1 if you have the <limits.h> header file. */
+#define HAVE_LIMITS_H 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -15,6 +27,21 @@
 
 /* Define to 1 if you have the `mkdir' function. */
 #define HAVE_MKDIR 1
+
+/* Define to 1 if you have a working `mmap' system call. */
+#define HAVE_MMAP 1
+
+/* Define to 1 if you have the `munmap' function. */
+#define HAVE_MUNMAP 1
+
+/* Define to 1 if you have the <netdb.h> header file. */
+#define HAVE_NETDB_H 1
+
+/* Define to 1 if you have the <netinet/in.h> header file. */
+#define HAVE_NETINET_IN_H 1
+
+/* Define to 1 if you have the `socket' function. */
+#define HAVE_SOCKET 1
 
 /* Define to 1 if stdbool.h conforms to C99. */
 #define HAVE_STDBOOL_H 1
@@ -37,8 +64,27 @@
 /* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H 1
 
+/* Define to 1 if `st_blksize' is a member of `struct stat'. */
+#define HAVE_STRUCT_STAT_ST_BLKSIZE 1
+
+/* Define to 1 if `st_blocks' is a member of `struct stat'. */
+#define HAVE_STRUCT_STAT_ST_BLOCKS 1
+
+/* Define to 1 if `st_rdev' is a member of `struct stat'. */
+#define HAVE_STRUCT_STAT_ST_RDEV 1
+
+/* Define to 1 if your `struct stat' has `st_blocks'. Deprecated, use
+   `HAVE_STRUCT_STAT_ST_BLOCKS' instead. */
+#define HAVE_ST_BLOCKS 1
+
 /* Define to 1 if you have the <syslog.h> header file. */
 #define HAVE_SYSLOG_H 1
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#define HAVE_SYS_PARAM_H 1
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#define HAVE_SYS_SOCKET_H 1
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #define HAVE_SYS_STAT_H 1

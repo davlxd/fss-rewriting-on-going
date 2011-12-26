@@ -23,6 +23,9 @@
 #ifndef _FSS_SIGNAL_H
 #define _FSS_SIGNAL_H
 
-void init_signal_handler();
+#include <signal.h>
+
+void (*setsignal(int signo, void (*handler)(int))) (int);
+void set_int_term();
 
 #endif

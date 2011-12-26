@@ -24,10 +24,8 @@
 #define _FSS_FLIST_H
 
 #include "options.h"
+#include "fss.h" // for DEPTH_OF_NFTW
 
-#ifndef DEPTH_OF_NFTW
-#define DEPTH_OF_NFTW   10
-#endif
 
 #define STATINFO_FSS        "statinfo.fss"
 #define RELAPATH_FSS        "relapath.fss"
@@ -43,13 +41,18 @@ struct fileinfo {
   uint64_t mtime;
   uint16_t pathlen; // Lenght of relapath (including '\0')
   
-  char *digest;
+  unsigned char *digest;
   char *relapath;
 
+  finfo *orig;  //ptr to original (moved to .trash) finfo
   finfo *chain; //ptr for hashtable chain
 };
 
 void init_flist(struct options *o);
+
+finfo* alloc_finfo(uint16_t relapath_len);
+void cleanup_finfo(finfo *fi);
+uint64_t hashing(finfo *fi);
 void load_flist(); // Load flist from *.fss
 void update_flist(); // Update flist by traversing monitored directory
 void unload_flist(); // Unload(Write) flist to *.fss
